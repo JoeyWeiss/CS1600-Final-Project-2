@@ -34,77 +34,60 @@ import javax.swing.JTextField;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 
-class MyTask extends TimerTask{
+class MyTaskTest extends TimerTask{
 	private UserRequestsGUI main;
 	private String jobName;
-	public MyTask(UserRequestsGUI this_instance, String jobName) {
+	public MyTaskTest(UserRequestsGUI this_instance, String jobName) {
 		this.main = this_instance;
 		this.jobName = jobName;
 	}
 
 	public void run() {
-		JSONObject obj =  new JSONObject(UserRequestsGUI.Web("GET", "https://dataproc.googleapis.com/v1beta2/projects/" + main.projectId +"/regions/" + main.clusterRegion +"/jobs/" + main.jobId + "?key=" + main.apiKey, null, null, UserRequestsGUI.accessToken));
+		JSONObject obj =  new JSONObject(UserRequestsGUI.Web("GET", "https://dataproc.googleapis.com/v1beta2/projects/" + main.mainID +"/regions/" + main.clusterRegion +"/jobs/" + main.jobId + "?key=" + main.myKey, null, null, UserRequestsGUI.token));
 		if(obj.has("done")) {
 			main.logPosition = obj.getString("driverOutputResourceUri");
 			System.out.println(obj.getJSONObject("status").getString("state"));
-			boolean success = obj.getJSONObject("status").getString("state").equals("DONE") ? true : false;
-			main.endTime = obj.getJSONObject("status").getString("stateStartTime");
+			boolean check = obj.getJSONObject("status").getString("state").equals("DONE") ? true : false;
+			main.end = obj.getJSONObject("status").getString("statestart");
 			JSONArray arr = obj.getJSONArray("statusHistory");
 			for(int i=0;i<arr.length();i++) {
 				if(arr.getJSONObject(i).getString("state").equals("PENDING")) {
-					main.startTime = arr.getJSONObject(i).getString("stateStartTime");
+					main.start = arr.getJSONObject(i).getString("statestart");
 					break;
 				}
 			}
 			if(jobName.equals("invertDriver"))
-				main.postSearchSuccess(success);
+				main.postSearchSuccess(check);
 			else if(jobName.equals("TopN"))
-				main.postNSearch(success);
+				main.postNSearch(check);
 			this.cancel();
 		}
 	}
 }
 
 public class UserRequestsGUI {
-	public String projectId = "fiery-blade-295916";
-	public String bucketName = "dataproc-staging-us-east1-656399245777-lxfd90ny";
-	public String clusterRegion = "us-east1";
-	public String clusterName = "cluster-6ecf";
-	public static String accessToken;
-	public String apiKey = "AIzaSyAuy7rurfmWzQEY2S59DGSNrnXiaMT42po";
 	public String jobId; 
 	public String logPosition;
-	public String startTime;
-	public String endTime;
-	private String IItext;
+	public String start;
+	public String end;
+	public static String token;
+	public String mainID = "fiery-blade-295916";
+	public String dataprocID = "dataproc-staging-us-east1-656399245777-lxfd90ny";
+	public String clusterRegion = "us-east1";
+	public String clusterID = "cluster-6ecf";
+	public String myKey = "AIzaSyAuy7rurfmWzQEY2S59DGSNrnXiaMT42po";
 	
-	private JFrame frame;
-	private JLabel lblLoading;
-	private JButton btnLoadEngine;
-	private JLabel lblElapsedTime;
-	private File files[];
-	private JTextField searchTextField;
-	private JTable tableSearch = null;
-	private JButton btnSearchForTerm;
-	private JButton btnTopN;
-	private JTextField topNTextField;
-	private JTable tableTopN;
-	private JTable tableTopN2;
-
-	private JScrollPane scrollPane;
-	private JLayeredPane layeredPane_3;
-	private JLayeredPane layeredPane_4;
-	private JLabel lblTopNFail;
-	private JLabel labelTopNElapsedTime;
-	private JButton btnGenerate;
-	private int N;
-
+	
 	private UserRequestsGUI getThis() {
 		return this;
 	}
+	
+	
+	private JFrame frame;
+
 	public static void main(String[] args) {
-		accessToken = System.getenv("ACCESS_TOKEN");
-		System.out.println(accessToken);
+		token = System.getenv("ACCESS_TOKEN");
+		System.out.println(token);
 		
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
@@ -117,28 +100,28 @@ public class UserRequestsGUI {
 			}
 		});
 	}
-	
-	public static String Web(String type, String url, String contentType, HttpEntity entity, String accessToken) {
+
+	public static String Web(String input, String link, String contType, HttpEntity entity, String token) {
 		try {
 			HttpClient client = HttpClientBuilder.create().build();;
-			HttpRequestBase request = type.equals("POST") ? new HttpPost(url) : (type.equals("DELETE")) ? new HttpDelete(url) : (type.equals("PATCH")) ? new HttpPatch(url) : new HttpGet(url);
-			request.addHeader("Authorization", "Bearer " + accessToken);
-			if(contentType != null)
-				request.addHeader("Content-Type", contentType);
+			HttpRequestBase request = input.equals("POST") ? new HttpPost(link) : (input.equals("DELETE")) ? new HttpDelete(link) : (input.equals("PATCH")) ? new HttpPatch(link) : new HttpGet(link);
+			request.addHeader("Authorization", "Bearer " + token);
+			if(contType != null)
+				request.addHeader("Content-Type", contType);
 			
-			if(type.equals("GET"))
+			if(input.equals("GET"))
 				request.addHeader("Cache-Control","no-cache, max-age=0");
 			
 			if(entity != null) {
-				if(type.equals("POST"))
+				if(input.equals("POST"))
 					((HttpPost)request).setEntity(entity);
-				else if(type.equals("PATCH"))
+				else if(input.equals("PATCH"))
 					((HttpPatch)request).setEntity(entity);
 			}
 				
 		
 			HttpResponse response = client.execute(request);
-			if(type.equals("DELETE"))
+			if(input.equals("DELETE"))
 				return null;
 			InputStream in = response.getEntity().getContent();
 			String body = IOUtils.toString(in, "UTF-8");
@@ -149,43 +132,57 @@ public class UserRequestsGUI {
 			return null;
 		}				
 	}
-	
-	public void postSearchSuccess(boolean success) {
+	private JLabel loadLabel;
+	private String testText;
+	private JLayeredPane level3;
+	private JLayeredPane level4;
+	private File files[];
+	private JTextField searchField;
+	private JTable searchTable = null;
+	private JButton searchWord;
+	private JButton nButton;
+	private JTextField nField;
+	private JTable tableTopN;
+
+	public void postSearchSuccess(boolean check) {
 		
-		lblLoading.setText(success ? "<html>Engine was loaded<br/>&<br/>Inverted indicies were constructed successfully!" : "Job Failed");
+		loadLabel.setText(check ? "<html>Engine was loaded<br/>&<br/>Inverted indicies were constructed successfully!" : "Job Failed");
 		for (File f: files) {
-			Web("DELETE", "https://storage.googleapis.com/storage/v1/b/" + bucketName + "/o/input" + "%2F" + f.getName(), null, null, accessToken);
+			Web("DELETE", "https://storage.googleapis.com/storage/v1/b/" + dataprocID + "/o/input" + "%2F" + f.getName(), null, null, token);
 		}
 		
 	
-		if(!success) return;
+		if(!check) return;
 		
-		IItext = Web("GET", "https://storage.googleapis.com/storage/v1/b/" + bucketName + "/o/" + "invertedOutput.txt" +"?alt=media", null, null, accessToken);
-		btnSearchForTerm.setVisible(true);
-		btnTopN.setVisible(true);
+		testText = Web("GET", "https://storage.googleapis.com/storage/v1/b/" + dataprocID + "/o/" + "invertedOutput.txt" +"?alt=media", null, null, token);
+		searchWord.setVisible(true);
+		nButton.setVisible(true);
 	}
-	
-	public void postNSearch(boolean success) {
+	private JScrollPane roll;
+	private JLabel lblTopmakeSearchButton;
+	private JLabel labelTopNElapsedTime;
+	private JButton makeSearchButton;
+	private int N;
+	public void postNSearch(boolean check) {
 		
 		
-		if(!success)
-			lblTopNFail.setVisible(true);
+		if(!check)
+			lblTopmakeSearchButton.setVisible(true);
 		else{
 			tableTopN = new JTable();
 			tableTopN.setRowHeight(60);
 			System.out.println("N: " + N);
 			DefaultTableModel model = new DefaultTableModel();
 			model.setColumnIdentifiers(new Object[] {"Term", "Total Frequencies"});
-			//model.addRow(new Object[] {"Term", "Frequency"});
 			
-			String jsonBody = "{\"cacheControl\": \"no-cache, max-age=0\"}";
+			String jsonText = "{\"cacheControl\": \"no-cache, max-age=0\"}";
 			try {
-				Web("PATCH", "https://storage.googleapis.com/storage/v1/b/" + bucketName + "/o/" + "TopN.txt", "application/json", new StringEntity(jsonBody), accessToken);
+				Web("PATCH", "https://storage.googleapis.com/storage/v1/b/" + dataprocID + "/o/" + "TopNOutput.txt", "application/json", new StringEntity(jsonText), token);
 			} catch (UnsupportedEncodingException e) {
 				e.printStackTrace();
 			}
 			
-			String body = Web("GET", "https://storage.googleapis.com/storage/v1/b/" + bucketName + "/o/" + "TopN.txt" +"?alt=media", null, null, accessToken);
+			String body = Web("GET", "https://storage.googleapis.com/storage/v1/b/" + dataprocID + "/o/" + "TopNOutput.txt" +"?alt=media", null, null, token);
 			Scanner scanner = new Scanner(body);
 			while (scanner.hasNextLine()) {
 				String line = scanner.nextLine();
@@ -195,192 +192,191 @@ public class UserRequestsGUI {
 			}
 			scanner.close();
 			tableTopN.setModel(model);
-			scrollPane = new JScrollPane(tableTopN);
-			scrollPane.setBounds(233, 96, 459, 240);
-			layeredPane_4.add(scrollPane);
+			roll = new JScrollPane(tableTopN);
+			roll.setBounds(233, 96, 459, 240);
+			level4.add(roll);
 		}
 		
-		btnGenerate.setEnabled(true);
-		layeredPane_3.setVisible(false);
-		layeredPane_4.setVisible(true);
+		makeSearchButton.setEnabled(true);
+		level3.setVisible(false);
+		level4.setVisible(true);
 	}
 	
 	
 
 	public UserRequestsGUI() {
-		initialize();
+		makeGUI();
 	}
-
-	private void initialize() {
+	private JButton loadEngine;
+	private JLabel timePassed;
+	private void makeGUI() {
 		frame = new JFrame();
 		frame.setBounds(100, 100, 951, 612);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(null);
 
-		JLayeredPane layeredPane = new JLayeredPane();
-		layeredPane.setBounds(0, 37, 935, 536);
-		frame.getContentPane().add(layeredPane);
+		JLayeredPane level = new JLayeredPane();
+		level.setBounds(0, 37, 935, 536);
+		frame.getContentPane().add(level);
 		
-		JLayeredPane layeredPane_1 = new JLayeredPane();
-		layeredPane_1.setBounds(0, 37, 935, 536);
-		layeredPane_1.setVisible(false);
-		frame.getContentPane().add(layeredPane_1);
+		JLayeredPane level1 = new JLayeredPane();
+		level1.setBounds(0, 37, 935, 536);
+		level1.setVisible(false);
+		frame.getContentPane().add(level1);
 		
-		JLayeredPane layeredPane_2 = new JLayeredPane();
-		layeredPane_2.setVisible(false);
-		layeredPane_2.setBounds(0, 37, 935, 536);
-		frame.getContentPane().add(layeredPane_2);
+		JLayeredPane level2 = new JLayeredPane();
+		level2.setVisible(false);
+		level2.setBounds(0, 37, 935, 536);
+		frame.getContentPane().add(level2);
 		
-		layeredPane_3 = new JLayeredPane();
-		layeredPane_3.setVisible(false);
-		layeredPane_3.setBounds(0, 37, 935, 536);
-		frame.getContentPane().add(layeredPane_3);
+		level3 = new JLayeredPane();
+		level3.setVisible(false);
+		level3.setBounds(0, 37, 935, 536);
+		frame.getContentPane().add(level3);
 		
-		layeredPane_4 = new JLayeredPane();
-		layeredPane_4.setVisible(false);
-		layeredPane_4.setBounds(0, 37, 935, 536);
-		frame.getContentPane().add(layeredPane_4);
+		level4 = new JLayeredPane();
+		level4.setVisible(false);
+		level4.setBounds(0, 37, 935, 536);
+		frame.getContentPane().add(level4);
 		
 		JLabel lblEnterN = new JLabel("Enter N:");
 		lblEnterN.setBounds(233, 66, 459, 85);
-		layeredPane_3.add(lblEnterN);
+		level3.add(lblEnterN);
 		lblEnterN.setHorizontalAlignment(SwingConstants.CENTER);
 		
-		topNTextField = new JTextField();
-		topNTextField.setBounds(149, 158, 619, 48);
-		layeredPane_3.add(topNTextField);
-		topNTextField.setColumns(10);
+		nField = new JTextField();
+		nField.setBounds(149, 158, 619, 48);
+		level3.add(nField);
+		nField.setColumns(10);
 		
-		JButton buttonTopNGoBack = new JButton("Go Back");
-		buttonTopNGoBack.addActionListener(new ActionListener() {
+		JButton nGoBackButton = new JButton("Go Back");
+		nGoBackButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				layeredPane_3.setVisible(false);
-				layeredPane.setVisible(true);
+				level3.setVisible(false);
+				level.setVisible(true);
 			}
 		});
-		buttonTopNGoBack.setBounds(814, 0, 121, 48);
-		layeredPane_3.add(buttonTopNGoBack);
+		nGoBackButton.setBounds(814, 0, 121, 48);
+		level3.add(nGoBackButton);
 		
-		btnGenerate = new JButton("Search");
-		btnGenerate.setBounds(233, 232, 459, 115);
-		layeredPane_3.add(btnGenerate);
+		makeSearchButton = new JButton("Search");
+		makeSearchButton.setBounds(233, 232, 459, 115);
+		level3.add(makeSearchButton);
 		
 	
 		
-		JLabel lblN = new JLabel("N");
-		lblN.setBounds(58, 51, 680, 48);
-		layeredPane_4.add(lblN);
+		JLabel nLabel = new JLabel("N");
+		nLabel.setBounds(58, 51, 680, 48);
+		level4.add(nLabel);
 		
-		lblTopNFail = new JLabel("Failure");
-		lblTopNFail.setVisible(false);
-		lblTopNFail.setHorizontalAlignment(SwingConstants.CENTER);
-		lblTopNFail.setBounds(233, 162, 459, 120);
-		layeredPane_4.add(lblTopNFail);
+		lblTopmakeSearchButton = new JLabel("Failure");
+		lblTopmakeSearchButton.setVisible(false);
+		lblTopmakeSearchButton.setHorizontalAlignment(SwingConstants.CENTER);
+		lblTopmakeSearchButton.setBounds(233, 162, 459, 120);
+		level4.add(lblTopmakeSearchButton);
 		
 		labelTopNElapsedTime = new JLabel("Top N Elapsed Time");
 		labelTopNElapsedTime.setVisible(false);
 		labelTopNElapsedTime.setBounds(58, 51, 680, 48);
-		layeredPane_4.add(labelTopNElapsedTime);
+		level4.add(labelTopNElapsedTime);
 		
-		JButton buttonGoBackToTopN = new JButton("Go Back To Top N");
-		buttonGoBackToTopN.setBounds(738, 0, 197, 48);
-		layeredPane_4.add(buttonGoBackToTopN);
+		JButton nGoBack = new JButton("Go Back To Top N");
+		nGoBack.setBounds(738, 0, 197, 48);
+		level4.add(nGoBack);
 		
 		JFileChooser fileChooser = new JFileChooser();
 		fileChooser.setMultiSelectionEnabled(true);
 			
 		JLabel lblFileToBe = new JLabel("");
 		lblFileToBe.setBounds(0, 169, 935, 217);
-		layeredPane.add(lblFileToBe);
+		level.add(lblFileToBe);
 		lblFileToBe.setVerticalAlignment(SwingConstants.TOP);
 		lblFileToBe.setHorizontalAlignment(SwingConstants.CENTER);
 		
-		JButton btnChooseFile = new JButton("Choose File");
+		JButton pickFile = new JButton("Choose File");
 		
-		btnLoadEngine = new JButton("Construct Inverted Indicies and Load Engine");
+		loadEngine = new JButton("Construct Inverted Indicies and Load Engine");
 
-		btnLoadEngine.setVisible(false);
-		btnLoadEngine.setBounds(233, 393, 459, 85);
-		layeredPane.add(btnLoadEngine);
+		loadEngine.setVisible(false);
+		loadEngine.setBounds(233, 393, 459, 85);
+		level.add(loadEngine);
 		
-		btnChooseFile.setBounds(233, 66, 459, 85);
-		layeredPane.add(btnChooseFile);
+		pickFile.setBounds(233, 66, 459, 85);
+		level.add(pickFile);
 		
-		lblLoading = new JLabel("Loading engine and constructing inverted indicies...");
-		lblLoading.setBounds(10, 162, 937, 210);
-		lblLoading.setVisible(false);
-		layeredPane.add(lblLoading);
-		lblLoading.setHorizontalAlignment(SwingConstants.CENTER);
+		loadLabel = new JLabel("Loading engine and constructing inverted indicies...");
+		loadLabel.setBounds(10, 162, 937, 210);
+		loadLabel.setVisible(false);
+		level.add(loadLabel);
+		loadLabel.setHorizontalAlignment(SwingConstants.CENTER);
 		
 	
-		lblElapsedTime = new JLabel("");
-		lblElapsedTime.setBounds(12, 0, 136, 48);
-		layeredPane.add(lblElapsedTime);
+		timePassed = new JLabel("");
+		timePassed.setBounds(12, 0, 136, 48);
+		level.add(timePassed);
 		
-		btnSearchForTerm = new JButton("Search For Term");
-		btnSearchForTerm.setVisible(false);
-		btnSearchForTerm.setBounds(0, 393, 459, 85);
-		layeredPane.add(btnSearchForTerm);
+		searchWord = new JButton("Search For Term");
+		searchWord.setVisible(false);
+		searchWord.setBounds(0, 393, 459, 85);
+		level.add(searchWord);
 		
 		
-		btnTopN = new JButton("Top N");
-		btnTopN.setVisible(false);
-		btnTopN.setBounds(476, 393, 459, 85);
-		layeredPane.add(btnTopN);
+		nButton = new JButton("Top N");
+		nButton.setVisible(false);
+		nButton.setBounds(476, 393, 459, 85);
+		level.add(nButton);
 			
 		
-		JButton btnSearchBack = new JButton("Go Back");
-		btnSearchBack.setBounds(814, 0, 121, 48);
-		layeredPane_1.add(btnSearchBack);
+		JButton searchBack = new JButton("Go Back");
+		searchBack.setBounds(814, 0, 121, 48);
+		level1.add(searchBack);
 		
 		JLabel lblEnterSearchTerm = new JLabel("Enter Your Search Term: ");
 		lblEnterSearchTerm.setBounds(233, 66, 459, 85);
-		layeredPane_1.add(lblEnterSearchTerm);
+		level1.add(lblEnterSearchTerm);
 		lblEnterSearchTerm.setHorizontalAlignment(SwingConstants.CENTER);
 		
-		JButton btnSearch = new JButton("Search");	
-		searchTextField = new JTextField();
-		searchTextField.setBounds(149, 158, 619, 48);
-		layeredPane_1.add(searchTextField);
-		searchTextField.setColumns(10);
-		btnSearch.setBounds(233, 232, 459, 115);
-		layeredPane_1.add(btnSearch);
+		JButton searchButton1 = new JButton("Search");	
+		searchField = new JTextField();
+		searchField.setBounds(149, 158, 619, 48);
+		level1.add(searchField);
+		searchField.setColumns(10);
+		searchButton1.setBounds(233, 232, 459, 115);
+		level1.add(searchButton1);
 		
-
-		
-		JButton btnGoBackToSearch = new JButton("Go Back To Search");
-		btnGoBackToSearch.setBounds(738, 0, 197, 48);
-		layeredPane_2.add(btnGoBackToSearch);
+		JButton searchGoBack = new JButton("Go Back To Search");
+		searchGoBack.setBounds(738, 0, 197, 48);
+		level2.add(searchGoBack);
 		
 		JLabel lblSearchedTerm = new JLabel("You searched for the term: ");
 		lblSearchedTerm.setBounds(58, 0, 680, 48);
-		layeredPane_2.add(lblSearchedTerm);
+		level2.add(lblSearchedTerm);
 		
 		JLabel lblSearchElapsedTime = new JLabel("");
 		lblSearchElapsedTime.setBounds(58, 51, 680, 48);
-		layeredPane_2.add(lblSearchElapsedTime);
+		level2.add(lblSearchElapsedTime);
 		
 		
 		JLabel lblTermNotExist = new JLabel("Term Not Found");
 		lblTermNotExist.setVisible(false);
 		lblTermNotExist.setBounds(233, 162, 459, 120);
-		layeredPane_2.add(lblTermNotExist);
+		level2.add(lblTermNotExist);
 		lblTermNotExist.setHorizontalAlignment(SwingConstants.CENTER);
 	
 		
-		tableSearch = new JTable();
-		tableSearch.setBounds(233, 120, 459, 240);
-		tableSearch.setRowHeight(60);
-		layeredPane_2.add(tableSearch);
+		searchTable = new JTable();
+		searchTable.setBounds(233, 120, 459, 240);
+		searchTable.setRowHeight(60);
+		level2.add(searchTable);
 		
 
-		JLabel lblNewLabel = new JLabel("Joseph Weiss Search Engine");
-		lblNewLabel.setBounds(5, 5, 935, 25);
-		lblNewLabel.setHorizontalAlignment(SwingConstants.LEFT);
-		frame.getContentPane().add(lblNewLabel);
+		JLabel nLabelewLabel = new JLabel("Joseph Weiss Search Engine");
+		nLabelewLabel.setBounds(5, 5, 935, 25);
+		nLabelewLabel.setHorizontalAlignment(SwingConstants.LEFT);
+		frame.getContentPane().add(nLabelewLabel);
 		
 				
-		btnChooseFile.addActionListener(new ActionListener() {
+		pickFile.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				int res = fileChooser.showSaveDialog(null);
 				if (res == JFileChooser.APPROVE_OPTION) {
@@ -393,53 +389,52 @@ public class UserRequestsGUI {
 					text += "</div></html>";
 					
 					lblFileToBe.setText(text);
-					btnLoadEngine.setVisible(true);
+					loadEngine.setVisible(true);
 				}
 					
 			}
 		});
 		
-		btnLoadEngine.addActionListener(new ActionListener() {
+		loadEngine.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				lblFileToBe.setVisible(false);
-				btnChooseFile.setVisible(false);
-				lblLoading.setVisible(true);
-				btnLoadEngine.setVisible(false);
+				pickFile.setVisible(false);
+				loadLabel.setVisible(true);
+				loadEngine.setVisible(false);
 				
 				for (File f: files) {
-					String obj = Web("POST", "https://storage.googleapis.com/upload/storage/v1/b/" + bucketName + "/o??uploadType=media&name=input/" + f.getName(), "application/octet-stream", new FileEntity(f), accessToken);
+					String obj = Web("POST", "https://storage.googleapis.com/upload/storage/v1/b/" + dataprocID + "/o??uploadType=media&name=input/" + f.getName(), "application/octet-stream", new FileEntity(f), token);
 					if(obj == null) {
-						lblLoading.setText("Failure");
+						loadLabel.setText("Failure");
 						return;
 					}
 				}
-				lblLoading.setText("<html>Engine was loaded<br/>&<br/>Inverted indicies were constructed successfully!</html>");	
 				
-				String jsonBody = "{\"projectId\": \"" + projectId + "\"," +"\"job\": {\"placement\": {\"clusterName\": \"" + clusterName + "\"},\"hadoopJob\": {\"jarFileUris\": [\"gs://" + bucketName +"/Jar_Files/invert.jar\"],\"args\": [\"gs://" + bucketName + "/input\",\"gs://" + bucketName + "/IIOutput\"],\"mainClass\": \"invertDriver\"}}}";
+				String jsonText = "{\"mainID\": \"" + mainID + "\"," +"\"job\": {\"placement\": {\"clusterID\": \"" + clusterID + "\"},\"hadoopJob\": {\"jarFileUris\": [\"gs://" + dataprocID +"/Jar_Files/invert.jar\"],\"args\": [\"gs://" + dataprocID + "/input\",\"gs://" + dataprocID + "/Output\"],\"mainClass\": \"invertDriver\"}}}";
 				try {
-					JSONObject obj = new JSONObject(Web("POST", "https://dataproc.googleapis.com/v1/projects/" + projectId +"/regions/" + clusterRegion +"/jobs:submit" + "?key=" + apiKey, "application/json", new StringEntity(jsonBody), accessToken));
+					JSONObject obj = new JSONObject(Web("POST", "https://dataproc.googleapis.com/v1/projects/" + mainID +"/regions/" + clusterRegion +"/jobs:submit" + "?key=" + myKey, "application/json", new StringEntity(jsonText), token));
 					jobId = obj.getJSONObject("reference").getString("jobId");
 				} catch (UnsupportedEncodingException e) {
 					e.printStackTrace();
 				}
 				java.util.Timer timer = new java.util.Timer();
-				MyTask task = new MyTask(getThis(), "invertDriver");
+				MyTaskTest task = new MyTaskTest(getThis(), "invertDriver");
 				timer.scheduleAtFixedRate(task, 0, 5000);
 			}
 		});
 		
 	
-		btnSearch.addActionListener(new ActionListener() {	
+		searchButton1.addActionListener(new ActionListener() {	
 			public void actionPerformed(ActionEvent e) {
-				btnSearch.setText("Making search...");
+				searchButton1.setText("Making search...");
 				
 				long start = System.currentTimeMillis();
 			      
-				String term = searchTextField.getText();
+				String term = searchField.getText();
 				List<String> docList = new ArrayList<String>(files.length);
 				List<String> frequencyList = new ArrayList<String>(files.length);
 				
-				Scanner scanner = new Scanner(IItext);
+				Scanner scanner = new Scanner(testText);
 				while (scanner.hasNextLine()) {
 					String line = scanner.nextLine();
 					String[] arr = line.split("\t");
@@ -469,105 +464,101 @@ public class UserRequestsGUI {
 				lblSearchElapsedTime.setText("Your search was executed in " + Float.toString((end - start) / 1000F) +" ms");
 				
 				if(docList.size() == 0) {
-					tableSearch.setModel(new DefaultTableModel());
+					searchTable.setModel(new DefaultTableModel());
 					lblTermNotExist.setVisible(true);
 				}
 				else {						
-					tableTopN2 = new JTable();
-					tableTopN2.setRowHeight(60);
+				
 					DefaultTableModel model = new DefaultTableModel();
 				    model.setColumnIdentifiers(new Object[] {"Doc Name", "Frequencies"});
-				    //model.addRow(new Object[] {"Doc Name", "Frequencies"});
+				    model.addRow(new Object[] {"Doc Name", "Frequencies"});
 				    for(int n=0;n<docList.size();n++) 
 				    	model.addRow(new Object[] {docList.get(n), frequencyList.get(n)});
 				
-				    tableTopN2.setModel(model);
-					scrollPane = new JScrollPane(tableTopN2);
-					scrollPane.setBounds(233, 96, 459, 240);
-					layeredPane_2.add(scrollPane);
 				}
-				layeredPane_1.setVisible(false);
-				layeredPane_2.setVisible(true);	
+				level1.setVisible(false);
+				level2.setVisible(true);	
+
 			}
 		});
 		
-		btnGenerate.addActionListener(new ActionListener() {
+		makeSearchButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if(!topNTextField.getText().matches("-?\\d+")) {
-					topNTextField.setText("Failure");
+				if(!nField.getText().matches("-?\\d+")) {
+					nField.setText("Failure");
 					return;
 				}
-				N = Integer.parseInt(topNTextField.getText());
+				N = Integer.parseInt(nField.getText());
 				if(N <= 0) {
-					topNTextField.setText("Failure");
+					nField.setText("Failure");
 					return;
 				}
-				lblN.setText("N: " + N);
+				nLabel.setText("Top " + N + " Frequent Terms");
 				
-				btnGenerate.setText("Making search...");
-				btnGenerate.setEnabled(false);
-				String jsonBody = "{\"projectId\": \"" + projectId + "\"," +"\"job\": {\"placement\": {\"clusterName\": \"" + clusterName + "\"},\"hadoopJob\": {\"jarFileUris\": [\"gs://" + bucketName +"/Jar_Files/top-n.jar\"],\"args\": [\"gs://" + bucketName + "/IIOutput\",\"gs://" + bucketName + "/TopNOutput\",\"" + N + "\"],\"mainClass\": \"TopN\"}}}";
+				makeSearchButton.setText("Making search...");
+				makeSearchButton.setEnabled(false);
+				String jsonText = "{\"mainID\": \"" + mainID + "\"," +"\"job\": {\"placement\": {\"clusterID\": \"" + clusterID + "\"},\"hadoopJob\": {\"jarFileUris\": [\"gs://" + dataprocID +"/Jar_Files/top-n.jar\"],\"args\": [\"gs://" + dataprocID + "/Output\",\"gs://" + dataprocID + "/TopNOutput\",\"" + N + "\"],\"mainClass\": \"TopN\"}}}";
 				try {
-					JSONObject obj = new JSONObject(Web("POST", "https://dataproc.googleapis.com/v1/projects/" + projectId +"/regions/" + clusterRegion +"/jobs:submit" + "?key=" + apiKey, "application/json", new StringEntity(jsonBody), accessToken));
+					JSONObject obj = new JSONObject(Web("POST", "https://dataproc.googleapis.com/v1/projects/" + mainID +"/regions/" + clusterRegion +"/jobs:submit" + "?key=" + myKey, "application/json", new StringEntity(jsonText), token));
 					jobId = obj.getJSONObject("reference").getString("jobId");
 				} catch (UnsupportedEncodingException exc) {
 					exc.printStackTrace();
 				}
 				java.util.Timer timer = new java.util.Timer();
-				MyTask task = new MyTask(getThis(), "TopN");
+				MyTaskTest task = new MyTaskTest(getThis(), "TopN");
 				timer.scheduleAtFixedRate(task, 0, 5000);
 			}
 		});
 		
-		btnGoBackToSearch.addActionListener(new ActionListener() {
+		searchGoBack.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				btnSearch.setText("Search");
+				searchButton1.setText("Search");
 				lblTermNotExist.setVisible(false);
-				layeredPane_2.setVisible(false);
-				layeredPane_1.setVisible(true);
+				level2.setVisible(false);
+				level1.setVisible(true);
 			}
 		});
 		
 		
-		buttonGoBackToTopN.addActionListener(new ActionListener() {
+		nGoBack.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-		    	Web("DELETE", "https://storage.googleapis.com/storage/v1/b/" + bucketName + "/o/TopN.txt", null, null, accessToken);
-		    	JSONObject obj= new JSONObject(Web("GET", "https://storage.googleapis.com/storage/v1/b/" + bucketName + "/o" + "?prefix=TopNOutput", null, null, accessToken));
+		    	Web("DELETE", "https://storage.googleapis.com/storage/v1/b/" + dataprocID + "/o/TopNOutput.txt", null, null, token);
+		    	JSONObject obj= new JSONObject(Web("GET", "https://storage.googleapis.com/storage/v1/b/" + dataprocID + "/o" + "?prefix=TopNOutput", null, null, token));
 		    	if(obj.has("items")) {
 		    		JSONArray arr = obj.getJSONArray("items");
 			    	for(int i=0;i<arr.length();i++) {
 			    		String fName = arr.getJSONObject(i).getString("name");
 			    		if(!fName.equals("TopNOutput/")) 
-			    			Web("DELETE", "https://storage.googleapis.com/storage/v1/b/" + bucketName + "/o/" + fName.replace("/", "%2F"), null, null, accessToken);
+			    			Web("DELETE", "https://storage.googleapis.com/storage/v1/b/" + dataprocID + "/o/" + fName.replace("/", "%2F"), null, null, token);
 			    	}
-			    	Web("DELETE", "https://storage.googleapis.com/storage/v1/b/" + bucketName + "/o/TopNOutput" + "%2f", null, null, accessToken);
+			    	Web("DELETE", "https://storage.googleapis.com/storage/v1/b/" + dataprocID + "/o/TopNOutput" + "%2f", null, null, token);
 		    	}
-				btnGenerate.setText("Search");
-				layeredPane_4.remove(scrollPane);
-				lblTopNFail.setVisible(false);
-				layeredPane_4.setVisible(false);
-				layeredPane_3.setVisible(true);
+				makeSearchButton.setText("Search");
+				level4.remove(roll);
+				lblTopmakeSearchButton.setVisible(false);
+				level4.setVisible(false);
+				level3.setVisible(true);
 			}
 		});
 		
-		btnTopN.addActionListener(new ActionListener() {
+		nButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				layeredPane.setVisible(false);
-				layeredPane_3.setVisible(true);
+				level.setVisible(false);
+				level3.setVisible(true);
 			}
 		});
 		
-		btnSearchForTerm.addActionListener(new ActionListener() {
+		searchWord.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				layeredPane.setVisible(false);
-				layeredPane_1.setVisible(true);
+				level.setVisible(false);
+				level1.setVisible(true);
 			}
 		});
 		
-		btnSearchBack.addActionListener(new ActionListener() {
+		searchBack.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				layeredPane_1.setVisible(false);
-				layeredPane.setVisible(true);
+				level1.setVisible(false);
+				level.setVisible(true);
 			}
 		});
 
@@ -576,45 +567,45 @@ public class UserRequestsGUI {
 		frame.addWindowListener(new java.awt.event.WindowAdapter() {
 		    @Override
 		    public void windowClosing(java.awt.event.WindowEvent windowEvent) {
-		    	Web("DELETE", "https://storage.googleapis.com/storage/v1/b/" + bucketName + "/o/invertedOutput.txt", null, null, accessToken);
-		    	Web("DELETE", "https://storage.googleapis.com/storage/v1/b/" + bucketName + "/o/TopN.txt", null, null, accessToken);
-		    	Web("DELETE", "https://storage.googleapis.com/storage/v1/b/" + bucketName + "/o/SearchTerm.txt", null, null, accessToken);
+		    	Web("DELETE", "https://storage.googleapis.com/storage/v1/b/" + dataprocID + "/o/invertedOutput.txt", null, null, token);
+		    	Web("DELETE", "https://storage.googleapis.com/storage/v1/b/" + dataprocID + "/o/TopNOutput.txt", null, null, token);
+		    	Web("DELETE", "https://storage.googleapis.com/storage/v1/b/" + dataprocID + "/o/SearchTerm.txt", null, null, token);
 		    	
 		    	
-		    	JSONObject obj= new JSONObject(Web("GET", "https://storage.googleapis.com/storage/v1/b/" + bucketName + "/o" + "?prefix=IIOutput", null, null, accessToken));
+		    	JSONObject obj= new JSONObject(Web("GET", "https://storage.googleapis.com/storage/v1/b/" + dataprocID + "/o" + "?prefix=Output", null, null, token));
 		    	JSONArray arr;
 		    	if(obj.has("items")) {
 		    		arr = obj.getJSONArray("items");
 			    	for(int i=0;i<arr.length();i++) {
 			    		String fName = arr.getJSONObject(i).getString("name");
-			    		if(!fName.equals("IIOutput/")) 
-			    			Web("DELETE", "https://storage.googleapis.com/storage/v1/b/" + bucketName + "/o/" + fName.replace("/", "%2F"), null, null, accessToken);
+			    		if(!fName.equals("Output/")) 
+			    			Web("DELETE", "https://storage.googleapis.com/storage/v1/b/" + dataprocID + "/o/" + fName.replace("/", "%2F"), null, null, token);
 			    	}
-			    	Web("DELETE", "https://storage.googleapis.com/storage/v1/b/" + bucketName + "/o/IIOutput" + "%2f", null, null, accessToken);
+			    	Web("DELETE", "https://storage.googleapis.com/storage/v1/b/" + dataprocID + "/o/Output" + "%2f", null, null, token);
 			    	
 		    	}
 		    	
-		    	obj= new JSONObject(Web("GET", "https://storage.googleapis.com/storage/v1/b/" + bucketName + "/o" + "?prefix=TopNOutput", null, null, accessToken));
+		    	obj= new JSONObject(Web("GET", "https://storage.googleapis.com/storage/v1/b/" + dataprocID + "/o" + "?prefix=TopNOutput", null, null, token));
 		    	if(obj.has("items")) {
 		    		arr = obj.getJSONArray("items");
 			    	for(int i=0;i<arr.length();i++) {
 			    		String fName = arr.getJSONObject(i).getString("name");
 			    		if(!fName.equals("TopNOutput/")) 
-			    			Web("DELETE", "https://storage.googleapis.com/storage/v1/b/" + bucketName + "/o/" + fName.replace("/", "%2F"), null, null, accessToken);
+			    			Web("DELETE", "https://storage.googleapis.com/storage/v1/b/" + dataprocID + "/o/" + fName.replace("/", "%2F"), null, null, token);
 			    	}
-			    	Web("DELETE", "https://storage.googleapis.com/storage/v1/b/" + bucketName + "/o/TopNOutput" + "%2f", null, null, accessToken);
+			    	Web("DELETE", "https://storage.googleapis.com/storage/v1/b/" + dataprocID + "/o/TopNOutput" + "%2f", null, null, token);
 		    	}
 		    	
 		    	
-		    	obj= new JSONObject(Web("GET", "https://storage.googleapis.com/storage/v1/b/" + bucketName + "/o" + "?prefix=SearchTermOutput", null, null, accessToken));
+		    	obj= new JSONObject(Web("GET", "https://storage.googleapis.com/storage/v1/b/" + dataprocID + "/o" + "?prefix=SearchTermOutput", null, null, token));
 		    	if(obj.has("items")) {
 		    		arr = obj.getJSONArray("items");
 			    	for(int i=0;i<arr.length();i++) {
 			    		String fName = arr.getJSONObject(i).getString("name");
 			    		if(!fName.equals("SearchTermOutput/")) 
-			    			Web("DELETE", "https://storage.googleapis.com/storage/v1/b/" + bucketName + "/o/" + fName.replace("/", "%2F"), null, null, accessToken);
+			    			Web("DELETE", "https://storage.googleapis.com/storage/v1/b/" + dataprocID + "/o/" + fName.replace("/", "%2F"), null, null, token);
 			    	}
-			    	Web("DELETE", "https://storage.googleapis.com/storage/v1/b/" + bucketName + "/o/SearchTermOutput" + "%2f", null, null, accessToken);
+			    	Web("DELETE", "https://storage.googleapis.com/storage/v1/b/" + dataprocID + "/o/SearchTermOutput" + "%2f", null, null, token);
 		    	}
 		    	
 		    }

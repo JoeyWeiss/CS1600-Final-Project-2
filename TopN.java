@@ -165,7 +165,7 @@ public class TopN {
 		
 		Path deletePath = new Path(args[1] + "/_SUCCESS");
 		Path srcPath = new Path(args[1]);
-		Path desPath = new Path("gs://dataproc-staging-us-east1-656399245777-lxfd90ny/TopN.txt");
+		Path desPath = new Path("gs://dataproc-staging-us-east1-656399245777-lxfd90ny/TopNOutput.txt");
 		
 		FileSystem gsfs = deletePath.getFileSystem(conf);
 		

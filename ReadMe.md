@@ -29,7 +29,7 @@ For example, on my computer I might run the following two commands:
     
     docker build --tag gui .                          
 
-    docker run --privileged --env DISPLAY=192.168.0.40:0.0 --env ACCESS_TOKEN= gui
+    docker run --privileged --env DISPLAY=192.168.0.40:0.0 --env ACCESS_TOKEN=******* gui
 
 Step 5: When he program launches, click the "Choose Files" button. Then navigate to "/usr/src/app/input" and select as many .tar.gz files as you want. Then click "Construct Inverted Indicies and Load Engine". The program will function as the Mockup.pdf file you gave us works. Click "Search for Term" to look for thhe frequency of particular words or click "Top-N" to find the n most frequent words. There is a back button in the top right corner of every sub page to bring you back.
 
@@ -52,13 +52,15 @@ My Info:
 
 
 References:
+  General help with setting up Inverted Index on GCP
+    http://www-scf.usc.edu/~shin630/Youngmin/files/HadoopInvertedIndexV5.pdf
   In schedule tasks, so I implement TimerTask
     https://springframework.guru/java-timer/
   Inverted Index guides
     https://timepasstechies.com/map-reduce-inverted-index-sample/
     https://acadgild.com/blog/building-inverted-index-mapreduce#:~:text=Inverted%20index%20is%20index%20data,or%20a%20set%20of%20documents.
   NaturalKeyPartitioner Reference
-    https://www.javatips.net/api/clickstream-tutorial-master/03_processing/02_sessionization/mr/src/main/java/com/hadooparchitecturebook/NaturalKeyPartitioner.java
+    https://www.javatips.net/API/clickstream-tutorial-master/03_processing/02_sessionization/mr/src/main/java/com/hadooparchitecturebook/NaturalKeyPartitioner.java
   My references to the GCP, inclusing use of oauthplayground, and GUI orgainzation using layers
     https://github.com/catsae/searchGUI
   TopN reference
