@@ -31,7 +31,7 @@ For example, on my computer I might run the following two commands:
     
     docker build --tag gui .                          
 
-    docker run --privileged --env DISPLAY=192.168.0.40:0.0 --env ACCESS_TOKEN=ya29.a0AfH6SMCDoBtJEyxfZlp4J8VAnZNmngYB97-fkHMuF8rloYTdCIl1Itq3tVJlVoqaR_M1_MeepOpcOsh5preJNke9vkGAQ3rM6gXMlLpmRs1hA0lMjKmhuGjE8PP3R1Y0sx7ehWl6cpfNGMQ2EM1Rzpjy1PqqeRWfZZO4hkCDyCI gui
+    docker run --privileged --env DISPLAY=192.168.0.40:0.0 --env ACCESS_TOKEN=ya29.a0AfH6SMCb8Broc-lBxHS2E89foWaoWfh0nHaym2919w2dHSrrIyM8iEzLZ26VCBzIfUpcir3kDW7xkikjphiwqeWftWNMp3mcYg9VNFL7_6AoONFObbYpDm7PwNuUEUDjrY52WS8En73ShlVP1I3lu6TNNVIsmqxqEK8lUShZBac gui
 
 Step 5: When he program launches, click the "Choose Files" button. Then navigate to "/usr/src/app/input" and select as many .tar.gz files as you want. Then click "Construct Inverted Indicies and Load Engine". The program will function as the Mockup.pdf file you gave us works. Click "Search for Term" to look for thhe frequency of particular words or click "Top-N" to find the n most frequent words. There is a back button in the top right corner of every sub page to bring you back.
 
